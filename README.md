@@ -29,17 +29,17 @@ The output predictions are processed with a probability threshold and non-max su
 
 #### Guide to files
 
-model.py: Contains the neural network.
+model.py: contains the neural network.
 
-train.py: Trains and optionally saves a YOLO model. set hyperparameters and data path using variables at the top of the file.
+train.py: trains and optionally saves a YOLO model. set hyperparameters and data path using variables at the top of the file.
 
-test_model.py: Runs the forward pass of a loaded model, computes mean average precision and plots results.
+test_model.py: runs the forward pass of a loaded model, computes mean average precision and plots results.
 
-loss.py: The YOLO loss function as specified in the paper.
+loss.py: the YOLO loss function as specified in the paper.
 
-dataset.py: Creates PyTorch dataset object. Converts images and labels into YOLO form (SxS grid).
+dataset.py: creates PyTorch dataset object. Converts images and labels into YOLO form (SxS grid).
 
-utils.py: Utility functions
+utils.py: utility functions
 
 ---
 

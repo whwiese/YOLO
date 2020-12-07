@@ -264,11 +264,16 @@ def midpoint_to_corners(box_midpoint):
     return box_corners
 
 def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
-        C=20, pred_format="cells", box_format="midpoint", device="cpu"):
+        C=20, pred_format="cells", box_format="midpoint", 
+        device="cpu", mode="all"
+    ):
     """
     runs forward pass of model,
     returns predicted bboxes that have predicted probability
     above prob_threshold and ground truth bboxes
+
+    mode: set mode to "all" to get all bounding boxes
+        set mode to "batch" to get bounding boxes from a random batch
     """
     all_pred_bboxes = []
     all_gt_bboxes = []
@@ -277,7 +282,12 @@ def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
     model.eval()
     train_index = 0
 
-    for batch_index, (x, labels) in enumerate(loader):
+    if mode == "batch":
+        batches =  enumerate([next(iter(loader))]) 
+    else:
+        batches = enumerate(loader)
+
+    for batch_index, (x, labels) in batches: 
         x = x.to(device)
         labels = labels.to(device)
 
@@ -288,6 +298,7 @@ def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
         batch_size = x.shape[0]
         gt_bboxes = cells_to_full_image(labels, S, C)
         pred_bboxes = cells_to_full_image(predictions, S, C)
+
         for example in range(batch_size):
             #nms input boxes have form [[class_num, x_mid, y_mid, width, height, prob],[],...]
             nms_bboxes = non_max_supression(
@@ -388,3 +399,9 @@ def plot_detections(image, labels):
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
     plt.show()
+
+def ceildiv(a, b):
+    """
+    performs ceiling integer division
+    """
+    return -(-a // b)

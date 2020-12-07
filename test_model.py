@@ -18,10 +18,10 @@ GRID_SIZE = 7
 NUM_BOXES = 2
 NUM_CLASSES = 20
 
-DATA_CSV = "data/8examples.csv"
+DATA_CSV = "data/100examples.csv"
 IMG_DIR = "data/images"
 LABEL_DIR= "data/labels"
-MODEL_PATH = "saved_models/overfit_8.pt"
+MODEL_PATH = "saved_models/overfit_100.pt"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 8
 
@@ -63,7 +63,7 @@ def main():
 
     predictions, labels = get_bboxes(
             test_loader, model, iou_threshold=0.5, prob_threshold=0.4,
-            S=GRID_SIZE, C=NUM_CLASSES
+            S=GRID_SIZE, C=NUM_CLASSES, mode="all"
     )
     
     mAP = mean_average_precision(predictions, labels,

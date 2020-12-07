@@ -11,6 +11,7 @@ from utils import (
         mean_average_precision,
         single_map,
         get_bboxes,
+        ceildiv,
 )
 from loss import YoloLoss
 
@@ -31,10 +32,11 @@ EPOCHS = 200
 NUM_WORKERS = 2
 PIN_MEMORY = False
 LOAD_MODEL = False
-TRAINING_DATA = "data/8examples.csv"
-TEST_DATA = "data/8examples.csv"
-SAVE_MODEL_PATH = "saved_models/overfit_8.pt"
-LOAD_MODEL_FILE = "saved_models/overfit_8.pt"
+DROP_LAST = False
+TRAINING_DATA = "data/100examples.csv"
+TEST_DATA = "data/100examples.csv"
+SAVE_MODEL_PATH = "saved_models/overfit_100.pt"
+LOAD_MODEL_FILE = "saved_models/overfit_100.pt"
 IMG_DIR = "data/images"
 LABEL_DIR = "data/labels"
 
@@ -111,7 +113,7 @@ def main():
     for epoch in range(EPOCHS):
         pred_boxes, target_boxes = get_bboxes(
                 train_loader, model, iou_threshold=0.5, prob_threshold=0.4,
-                S=GRID_SIZE, C=NUM_CLASSES,
+                S=GRID_SIZE, C=NUM_CLASSES, mode = "batch",
         )
         # map function takes predicted boxes and ground truth
         # boxes in form [[],[],[],...] where each sublist is a bounding box
@@ -124,7 +126,7 @@ def main():
 
         print("Train mAP: %f"%(mAP))
         if mAP > 0.99:# or epochs_passed == 50:
-            torch.save(model.state_dict(),SAVE_MODEL_PATH)
+#            torch.save(model.state_dict(),SAVE_MODEL_PATH)
             print("Trained for %d epochs"%(epochs_passed))
             break
 

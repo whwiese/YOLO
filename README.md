@@ -7,7 +7,7 @@ This project was heavily influenced by
 I made some different design choices and generalized the model by allowing the user to easily adjust the YOLO hyperparameters (grid size, number of 
 bounding boxes per grid space, number of classes for classification problem) in train.py, but the structure of the project came from Persson's implementation. 
 I also used data files from [Persson's Kaggle repository](https://www.kaggle.com/dataset/734b7bcb7ef13a045cbdd007a3c19874c2586ed0b02b4afc86126e89d00af8d2)
-to train and test the model.
+to train and test the model, and some of his [test cases](https://github.com/aladdinpersson/Machine-Learning-Collection/tree/master/ML_tests/Object_detection_tests) to test my implementations of utility functions.
 
 ---
 #### YOLOv1: a short summary
@@ -43,7 +43,20 @@ utils.py: Utility functions
 
 ---
 
-#### Some Predictions (after overfitting 100 training images for 26 epochs):
+#### Get the data (Pascal VOC)
+
+[Aladdin Persson's Kaggle repository](https://www.kaggle.com/dataset/734b7bcb7ef13a045cbdd007a3c19874c2586ed0b02b4afc86126e89d00af8d2)
+ contains some nicely prepared csv files that can be used with this model along with the Pascal VOC images and labels. This is 
+ an easy way to get the model up and running quickly.
+ 
+[Or get the images and labels here and process them yourself](https://pjreddie.com/projects/pascal-voc-dataset-mirror/).
+
+Or bring your own data! This implemetation of YOLO is designed to handle data with an arbitrary number of classes. 
+Though some slight adjusting of dataset.py may be required if bounding boxes are not labeled in (x_mid, y_mid, width, height) form.
+
+___
+
+#### Some predictions (after overfitting 100 training images for 26 epochs):
 <img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Birds.png" alt="gen" width="400"/> <img 
 src="https://github.com/whwiese/YOLOv1/blob/master/predictions/DiningRoom.png" alt="gen" width="400"/> <img 
 src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Sheep.png" alt="gen" width="400"/> <img 

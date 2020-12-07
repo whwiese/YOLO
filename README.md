@@ -49,4 +49,4 @@ src="https://github.com/whwiese/YOLOv1/blob/master/predictions/DiningRoom.png" a
 src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Sheep.png" alt="gen" width="400"/> <img 
 src="https://github.com/whwiese/YOLOv1/blob/master/predictions/AirplanePerson2.png" alt="gen" width="400"/>
 
-...something's being learned but not very fast! Email me if you want to employ me or buy me a GPU (whwiese@berkeley.edu)
+...something's being learned, but not very fast! Email me if you want to employ me or buy me a GPU (whwiese@berkeley.edu)

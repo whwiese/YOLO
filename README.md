@@ -23,6 +23,7 @@ Therefore each grid space can predict B different bounding boxes, but only one c
 The output predictions are processed with a probability threshold and non-max supression prior to evaluation. This should eliminate extraneous bounding boxes.
 
 ---
+
 ### Change Log
 
 #### YOLOv2_lite (12/11/2020)
@@ -43,6 +44,8 @@ memory reduction solution.
 
 <img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/2l_100e/Airplane3.png" alt="gen" width="400"/> <img 
 src="https://github.com/whwiese/YOLOv1/blob/master/predictions/2l_100e/TableChairSofa.png" alt="gen" width="400"/>
+
+---
 
 ### Guide to files
 
@@ -81,9 +84,9 @@ src="https://github.com/whwiese/YOLOv1/blob/master/predictions/AirplanePerson2.p
 
 ...something's being learned, but not very fast! Email me if you want to employ me or buy me a GPU (whwiese@berkeley.edu)
 
-### References
+---
 
-The YOLO (You Only Look Once) object detector was introduced in the paper [You Only Look Once: Unified, Real-Time Object Detection](https://arxiv.org/abs/1506.02640) by Joseph Redmon et al. in 2015.
+### References
 
 [1] [You Only Look Once: Unified, Real-Time Object Detection](https://arxiv.org/abs/1506.02640) - Joseph Redmon et al., 2015.
 

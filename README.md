@@ -49,17 +49,17 @@ src="https://github.com/whwiese/YOLOv1/blob/master/predictions/2l_100e/TableChai
 
 ### Guide to files
 
-model.py: contains the neural network.
+model.py: Contains models. Current modles are YOLOv1, YOLOv2_lite
 
-train.py: trains and optionally saves a YOLO model. set hyperparameters and data path using variables at the top of the file.
+train.py: Trains and optionally saves a YOLO model. set hyperparameters and data path using variables at the top of the file.
 
-test_model.py: runs the forward pass of a loaded model, computes mean average precision and plots results.
+test_model.py: Runs the forward pass of a loaded model, computes mean average precision and plots results.
 
-loss.py: the YOLO loss function as specified in the paper.
+loss.py: The YOLO loss function as specified in the paper.
 
-dataset.py: creates PyTorch dataset object. Converts images and labels into YOLO form (SxS grid).
+dataset.py: Creates PyTorch dataset object. Converts images and labels into YOLO form (SxS grid).
 
-utils.py: utility functions
+utils.py: Utility functions
 
 ---
 

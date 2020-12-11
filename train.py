@@ -3,7 +3,7 @@ import torchvision.transforms as transforms
 import torch.optim as optim
 import torchvision.transforms.functional as FT
 from torch.utils.data import DataLoader
-from model import YOLOv1
+from model import (YOLOv1, YOLOv2_lite)
 from dataset import YOLOVOCDataset
 from utils import (
         intersection_over_union,
@@ -11,15 +11,15 @@ from utils import (
         mean_average_precision,
         single_map,
         get_bboxes,
-        ceildiv,
 )
 from loss import YoloLoss
+import time
 
 seed = 123
 torch.manual_seed(seed)
 
 #YOLO hyperparameters
-GRID_SIZE = 7
+GRID_SIZE = 13
 NUM_BOXES = 2
 NUM_CLASSES = 20
 
@@ -31,12 +31,12 @@ WEIGHT_DECAY = 0
 EPOCHS = 200
 NUM_WORKERS = 2
 PIN_MEMORY = False
-LOAD_MODEL = False
+LOAD_MODEL = True
 DROP_LAST = False
 TRAINING_DATA = "data/100examples.csv"
 TEST_DATA = "data/100examples.csv"
-SAVE_MODEL_PATH = "saved_models/overfit_100.pt"
-LOAD_MODEL_FILE = "saved_models/overfit_100.pt"
+SAVE_MODEL_PATH = "saved_models/2l_overfit_100_2l_100e.pt"
+LOAD_MODEL_PATH = "saved_models/2l_overfit_100.pt"
 IMG_DIR = "data/images"
 LABEL_DIR = "data/labels"
 
@@ -50,7 +50,7 @@ class Compose(object):
 
         return img, labels
 
-transform = Compose([transforms.Resize((448,448)), transforms.ToTensor()])
+transform = Compose([transforms.Resize((416,416)), transforms.ToTensor()])
 
 def train_fn(loader_train, model, optimizer, loss_fn):
     
@@ -68,7 +68,7 @@ def train_fn(loader_train, model, optimizer, loss_fn):
     print("Mean loss: %f"%(sum(mean_loss)/len(mean_loss)))
 
 def main():
-    model = YOLOv1(grid_size=GRID_SIZE, 
+    model = YOLOv2_lite(grid_size=GRID_SIZE, 
             num_boxes=NUM_BOXES, num_classes=NUM_CLASSES).to(DEVICE)
     optimizer = optim.Adam(
             model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
@@ -76,7 +76,7 @@ def main():
     loss_fn = YoloLoss(S=GRID_SIZE, B=NUM_BOXES, C=NUM_CLASSES)
 
     if LOAD_MODEL:
-        load_checkpoint(torch.load(LOAD_MODEL_FILE), model, optimizer)
+        model.load_state_dict(torch.load(LOAD_MODEL_PATH))
 
     train_dataset = YOLOVOCDataset(
             TRAINING_DATA, transform=transform, 
@@ -125,8 +125,8 @@ def main():
         )
 
         print("Train mAP: %f"%(mAP))
-        if mAP > 0.99:# or epochs_passed == 50:
-#            torch.save(model.state_dict(),SAVE_MODEL_PATH)
+        if epochs_passed == 50:
+            torch.save(model.state_dict(),SAVE_MODEL_PATH)
             print("Trained for %d epochs"%(epochs_passed))
             break
 
@@ -134,4 +134,6 @@ def main():
         epochs_passed += 1
 
 if __name__ == "__main__":
+    start_time = time.time()
     main()
+    print("Training time: %f seconds"%(time.time()-start_time))

@@ -5,7 +5,7 @@ import os
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-from model import YOLOv1
+from model import (YOLOv1, YOLOv2_lite)
 from dataset import YOLOVOCDataset
 from utils import (
         plot_detections,
@@ -14,14 +14,14 @@ from utils import (
 )
 
 #YOLO HYPERPARAMETERS
-GRID_SIZE = 7
+GRID_SIZE = 13
 NUM_BOXES = 2
 NUM_CLASSES = 20
 
 DATA_CSV = "data/100examples.csv"
 IMG_DIR = "data/images"
 LABEL_DIR= "data/labels"
-MODEL_PATH = "saved_models/overfit_100.pt"
+MODEL_PATH = "saved_models/overfit_100_2l_100e.pt"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 8
 
@@ -38,11 +38,11 @@ class Compose(object):
 
         return img, labels
 
-transform = Compose([transforms.Resize((448,448)), transforms.ToTensor()])
+transform = Compose([transforms.Resize((416,416)), transforms.ToTensor()])
 
 def main():
 
-    model = YOLOv1(grid_size=GRID_SIZE, num_boxes=NUM_BOXES, 
+    model = YOLOv2_lite(grid_size=GRID_SIZE, num_boxes=NUM_BOXES, 
             num_classes=NUM_CLASSES).to(DEVICE)
 
     model.load_state_dict(torch.load(MODEL_PATH))

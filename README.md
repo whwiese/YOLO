@@ -28,7 +28,7 @@ The output predictions are processed with a probability threshold and non-max su
 
 #### YOLOv2_lite (12/11/2020)
 
-YOLOv2_lite is a new model located in model.py which incorporates the darknet-19 architecture used in YOLOv2. The primary purpose of YOLOv2-lite is to
+YOLOv2_lite is a new model located in model.py which incorporates the darknet-19 architecture used in YOLOv2. The primary purpose of YOLOv2_lite is to
 reduce memory usage by getting rid of the fully-connected layers at the end of YOLOv1.
 
 YOLOv2_lite differs from YOLOv2 in that it does not use a passthrough layer to help the network learn more effectively based on fine-grained features. 

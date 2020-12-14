@@ -2,7 +2,7 @@ import torch
 import torchvision.transforms as transforms
 import torch.optim as optim
 import torchvision.transforms.functional as FT
-from torch.utils.data import DataLoader
+from torch.utils.data import (DataLoader, random_split)
 from model import (YOLOv1, YOLOv2_lite)
 from dataset import YOLOVOCDataset
 from utils import (
@@ -14,6 +14,7 @@ from utils import (
 )
 from loss import YoloLoss
 import time
+import pandas as pd
 
 seed = 123
 torch.manual_seed(seed)
@@ -31,14 +32,18 @@ WEIGHT_DECAY = 0
 EPOCHS = 200
 NUM_WORKERS = 2
 PIN_MEMORY = False
-LOAD_MODEL = True
+LOAD_MODEL = False
 DROP_LAST = False
-TRAINING_DATA = "data/100examples.csv"
-TEST_DATA = "data/100examples.csv"
-SAVE_MODEL_PATH = "saved_models/2l_overfit_100_2l_100e.pt"
+TRAINING_DATA = "data/all_voc.csv"
+TEST_DATA = None 
+SAVE_MODEL_PATH = "saved_models/datasplit_test"
 LOAD_MODEL_PATH = "saved_models/2l_overfit_100.pt"
 IMG_DIR = "data/images"
 LABEL_DIR = "data/labels"
+
+DATA_SIZE = len(pd.read_csv(TRAINING_DATA))
+TRAIN_SIZE = int(0.8*DATA_SIZE)
+VAL_SIZE = DATA_SIZE-TRAIN_SIZE
 
 class Compose(object):
     def __init__(self, transforms):
@@ -78,57 +83,99 @@ def main():
     if LOAD_MODEL:
         model.load_state_dict(torch.load(LOAD_MODEL_PATH))
 
-    train_dataset = YOLOVOCDataset(
+    mask_dataset = YOLOVOCDataset(
             TRAINING_DATA, transform=transform, 
             img_dir=IMG_DIR, label_dir=LABEL_DIR,
             S=GRID_SIZE, B=NUM_BOXES, C=NUM_CLASSES,
     )
-    
-    test_dataset = YOLOVOCDataset(
-            TEST_DATA, transform=transform, 
-            img_dir=IMG_DIR, label_dir=LABEL_DIR,
-            S=GRID_SIZE, B=NUM_BOXES, C=NUM_CLASSES,
+
+    train_dataset, val_dataset = random_split (
+            mask_dataset, [TRAIN_SIZE, VAL_SIZE], 
+            generator=torch.Generator().manual_seed(42),
     )
-   
-    train_loader = DataLoader(
-            dataset=train_dataset,
-            batch_size=BATCH_SIZE,
-            #num_workers=NUM_WORKERS,
-            #pin_memory=PIN_MEMORY,
-            shuffle=True,
-            drop_last=False,
-    )
-    
-    test_loader = DataLoader(
-            dataset=test_dataset,
-            batch_size=BATCH_SIZE,
-            #num_workers=NUM_WORKERS,
-            #pin_memory=PIN_MEMORY,
-            shuffle=True,
-            drop_last=False,
-    )
+
+    if torch.cuda.is_available():
+        train_loader = DataLoader(
+                dataset=train_dataset,
+                batch_size=BATCH_SIZE,
+                num_workers=NUM_WORKERS,
+                pin_memory=PIN_MEMORY,
+                shuffle=True,
+                drop_last=DROP_LAST,
+        )
+        
+        val_loader = DataLoader(
+                dataset=val_dataset,
+                batch_size=BATCH_SIZE,
+                num_workers=NUM_WORKERS,
+                pin_memory=PIN_MEMORY,
+                shuffle=True,
+                drop_last=DROP_LAST,
+        )
+
+    else:
+        train_loader = DataLoader(
+                dataset=train_dataset,
+                batch_size=BATCH_SIZE,
+                #num_workers=NUM_WORKERS,
+                #pin_memory=PIN_MEMORY,
+                shuffle=True,
+                drop_last=DROP_LAST,
+        )
+        
+        val_loader = DataLoader(
+                dataset=val_dataset,
+                batch_size=BATCH_SIZE,
+                #num_workers=NUM_WORKERS,
+                #pin_memory=PIN_MEMORY,
+                shuffle=True,
+                drop_last=DROP_LAST,
+        )
+
 
     epochs_passed = 0
+    val_mAPs = []
+    train_mAPs = []
+    epochs_recorded = []
 
     for epoch in range(EPOCHS):
-        pred_boxes, target_boxes = get_bboxes(
-                train_loader, model, iou_threshold=0.5, prob_threshold=0.4,
-                S=GRID_SIZE, C=NUM_CLASSES, mode = "batch",
-        )
-        # map function takes predicted boxes and ground truth
-        # boxes in form [[],[],[],...] where each sublist is a bounding box
-        # of form [image_index, class_pred, x_mid, y_mid, w, h, prob]
+        if epochs_passed%5 == 0:
+            train_pred_boxes, train_target_boxes = get_bboxes(
+                    train_loader, model, iou_threshold=0.5, prob_threshold=0.4,
+                    S=GRID_SIZE, C=NUM_CLASSES, mode = "batch",
+                    device=DEVICE,
+            )
+            val_pred_boxes, val_target_boxes = get_bboxes(
+                    val_loader, model, iou_threshold=0.5, prob_threshold=0.4,
+                    S=GRID_SIZE, C=NUM_CLASSES, mode = "batch",
+                    device=DEVICE,
+            )
 
-        mAP = single_map(
-                pred_boxes, target_boxes, 
-                box_format="midpoint", num_classes=NUM_CLASSES,
-        )
+            # map function takes predicted boxes and ground truth
+            # boxes in form [[],[],[],...] where each sublist is a bounding box
+            # of form [image_index, class_pred, x_mid, y_mid, w, h, prob]
+            train_mAP = mean_average_precision(
+                    val_pred_boxes, val_target_boxes, 
+                    box_format="midpoint", num_classes=NUM_CLASSES,
+                    start_threshold=0.4,
+            )
+            val_mAP = mean_average_precision(
+                    val_pred_boxes, val_target_boxes, 
+                    box_format="midpoint", num_classes=NUM_CLASSES,
+                    start_threshold=0.4,
+            )
 
-        print("Train mAP: %f"%(mAP))
-        if epochs_passed == 50:
-            torch.save(model.state_dict(),SAVE_MODEL_PATH)
+            train_mAPs.append(train_mAP)
+            val_mAPs.append(val_mAP)
+            epochs_recorded.append(epochs_passed)
+
+            print("Train mAP: %f"%(train_mAP))
+            print("Val mAP: %f"%(val_mAP))
+
+        if epochs_passed%10 == 0:
+            save_path = SAVE_MODEL_PATH + ("_%de"%(epochs_passed))+".pt"
+            torch.save(model.state_dict(),save_path)
             print("Trained for %d epochs"%(epochs_passed))
-            break
 
         train_fn(train_loader, model, optimizer, loss_fn)
         epochs_passed += 1

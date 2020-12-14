@@ -53,13 +53,19 @@ class YoloLoss(nn.Module):
         box_masks = []
         #generate masks
         for box in range(self.B):
-            box_masks.append((best_box==box).float())
+            if torch.cuda.is_available():
+                box_masks.append((best_box==box).float().cuda())
+            else:
+                box_masks.append((best_box==box).float())
         
         # ==================== #
         #    BOX COORDINAES    #
         # ==================== #
 
-        box_preds = torch.zeros(predictions[...,0:4].shape)
+        if torch.cuda.is_available():
+            box_preds = torch.zeros(predictions[...,0:4].shape).cuda()
+        else:
+            box_preds = torch.zeros(predictions[...,0:4].shape)
 
         for box in range(self.B):
             box_start = self.C + box*5
@@ -85,8 +91,11 @@ class YoloLoss(nn.Module):
         # ================= #
         #    OBJECT LOSS    #
         # ================= #
-            
-        confidence_preds = torch.zeros(predictions[...,0:1].shape)
+        
+        if torch.cuda.is_available():
+            confidence_preds = torch.zeros(predictions[...,0:1].shape).cuda()
+        else:
+            confidence_preds = torch.zeros(predictions[...,0:1].shape)
 
         for box in range(self.B):
             box_confidence = self.C + box*5 + 4

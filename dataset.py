@@ -2,6 +2,8 @@ import torch
 import os
 import pandas as pd
 from PIL import Image
+import torchvision.transforms as transforms
+import random
 
 """
 Defines a Pascal VOC dataset for use in YOLOV1 object detector.
@@ -14,7 +16,8 @@ __getitem__ returns:
 """
 class YOLOVOCDataset(torch.utils.data.Dataset):
     
-    def __init__(self, csv_file, img_dir, label_dir, transform, S=7, B=2, C=20):
+    def __init__(self, csv_file, img_dir, label_dir, transform, hflip_prob=0,
+            S=7, B=2, C=20,):
         self.annotations = pd.read_csv(csv_file)
         self.img_dir = img_dir
         self.label_dir = label_dir
@@ -22,12 +25,18 @@ class YOLOVOCDataset(torch.utils.data.Dataset):
         self.S = S
         self.B = B
         self.C = C
+        self.hflip_prob = hflip_prob
 
     def __len__(self):
         return len(self.annotations)
 
+    def transform(self, img, label):
+        img = self.transform
+
     def __getitem__(self, index):
-        label_path = os.path.join(self.label_dir, self.annotations.iloc[index,1])
+        example = self.annotations.iloc[index]
+
+        label_path = os.path.join(self.label_dir, example[1])
         boxes = []
         with open(label_path) as labels:
             for label in labels.readlines():
@@ -40,11 +49,16 @@ class YOLOVOCDataset(torch.utils.data.Dataset):
 
         boxes = torch.tensor(boxes)
 
-        img_path = os.path.join(self.img_dir, self.annotations.iloc[index,0])
+        img_path = os.path.join(self.img_dir, example[0]) 
         image = Image.open(img_path)
 
         if self.transform:
-            image, boxes = self.transform(image, boxes)
+            image, _ = self.transform(image, boxes)
+
+        if self.hflip_prob:
+            if random.random() > self.hflip_prob: 
+                image, boxes = hflip(image, boxes)
+
         label_grid = torch.zeros(self.S, self.S, self.C + 5)
         for box in boxes:
             """
@@ -77,4 +91,7 @@ class YOLOVOCDataset(torch.utils.data.Dataset):
         
         return image, label_grid
 
-
+def hflip(img, labels):
+    img = torch.flip(img, (2,))
+    labels[:,1] = 1-labels[:,1]
+    return img, labels

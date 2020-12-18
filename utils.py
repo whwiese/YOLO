@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torchvision.transforms as transforms
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -265,7 +266,7 @@ def midpoint_to_corners(box_midpoint):
 
 def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
         C=20, pred_format="cells", box_format="midpoint", 
-        device="cpu", mode="all"
+        device="cpu", mode="all", return_images=False, 
     ):
     """
     runs forward pass of model,
@@ -277,6 +278,10 @@ def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
     """
     all_pred_bboxes = []
     all_gt_bboxes = []
+
+    if return_images:
+        toPIL = transforms.ToPILImage()
+        images = []
     
     #set model to evaluation mode
     model.eval()
@@ -287,7 +292,9 @@ def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
     else:
         batches = enumerate(loader)
 
-    for batch_index, (x, labels) in batches: 
+    for batch_index, dataset_info in batches: 
+        x, labels = dataset_info
+
         x = x.to(device)
         labels = labels.to(device)
 
@@ -300,6 +307,7 @@ def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
         pred_bboxes = cells_to_full_image(predictions, S, C)
 
         for example in range(batch_size):
+
             #nms input boxes have form [[class_num, x_mid, y_mid, width, height, prob],[],...]
             nms_bboxes = non_max_supression(
                 pred_bboxes[example],
@@ -314,9 +322,15 @@ def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
             for gt_bbox in gt_bboxes[example]:
                 all_gt_bboxes.append([train_index] + gt_bbox)
 
+            if return_images:
+                images.append(toPIL(x[example,:,:,:]))
+
             train_index += 1
 
     model.train()
+
+    if return_images:
+        return images, all_pred_bboxes, all_gt_bboxes
     return all_pred_bboxes, all_gt_bboxes
 
 def cells_to_full_image(model_out, S, num_classes):

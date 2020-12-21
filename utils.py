@@ -264,7 +264,7 @@ def midpoint_to_corners(box_midpoint):
     
     return box_corners
 
-def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
+def get_bboxes(data, model, iou_threshold, prob_threshold, S=7,
         C=20, pred_format="cells", box_format="midpoint", 
         device="cpu", mode="all", return_images=False, 
     ):
@@ -287,23 +287,31 @@ def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
     model.eval()
     train_index = 0
 
-    if mode == "batch":
-        batches =  enumerate([next(iter(loader))]) 
+    if torch.is_tensor(data):
+        batches = enumerate([data.unsqueeze(0)])
+    elif mode == "batch":
+        batches =  enumerate([next(iter(data))]) 
     else:
-        batches = enumerate(loader)
+        batches = enumerate(data)
 
     for batch_index, dataset_info in batches: 
-        x, labels = dataset_info
+        if type(dataset_info)==list:
+            x, labels = dataset_info
+        else:
+            x = dataset_info
+            labels = None
+
 
         x = x.to(device)
-        labels = labels.to(device)
+        if labels != None:
+            labels = labels.to(device)
+            gt_bboxes = cells_to_full_image(labels, S, C)
 
         with torch.no_grad():
             predictions = model(x)
 
         predictions = predictions.reshape(predictions.shape[0],S,S,-1)
         batch_size = x.shape[0]
-        gt_bboxes = cells_to_full_image(labels, S, C)
         pred_bboxes = cells_to_full_image(predictions, S, C)
 
         for example in range(batch_size):
@@ -318,9 +326,10 @@ def get_bboxes(loader, model, iou_threshold, prob_threshold, S=7,
 
             for nms_bbox in nms_bboxes:
                 all_pred_bboxes.append([train_index] + nms_bbox)
-
-            for gt_bbox in gt_bboxes[example]:
-                all_gt_bboxes.append([train_index] + gt_bbox)
+            
+            if labels != None:
+                for gt_bbox in gt_bboxes[example]:
+                    all_gt_bboxes.append([train_index] + gt_bbox)
 
             if return_images:
                 images.append(toPIL(x[example,:,:,:]))

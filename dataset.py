@@ -14,10 +14,11 @@ __getitem__ returns:
         [one hot class_labels...,x_mid,y_mid,width,height,contains_object] 
         where coords are relative to the grid cell in which they are contained
 """
+
 class YOLOVOCDataset(torch.utils.data.Dataset):
     
     def __init__(self, csv_file, img_dir, label_dir, transform, hflip_prob=0,
-            S=7, B=2, C=20,):
+            random_crops=0,S=7, B=2, C=20,):
         self.annotations = pd.read_csv(csv_file)
         self.img_dir = img_dir
         self.label_dir = label_dir
@@ -26,6 +27,7 @@ class YOLOVOCDataset(torch.utils.data.Dataset):
         self.B = B
         self.C = C
         self.hflip_prob = hflip_prob
+        self.random_crops = random_crops
 
     def __len__(self):
         return len(self.annotations)
@@ -58,6 +60,14 @@ class YOLOVOCDataset(torch.utils.data.Dataset):
         if self.hflip_prob:
             if random.random() > self.hflip_prob: 
                 image, boxes = hflip(image, boxes)
+        
+        if self.random_crops:
+            crop_factor = self.random_crops*random.random()
+            super_size = int((1+crop_factor)*image.shape[1])
+            resize = transforms.Resize((super_size,super_size))
+            super_image = resize(image)
+
+            image, boxes = randomCrop(super_image, boxes, (448,448))
 
         label_grid = torch.zeros(self.S, self.S, self.C + 5)
         for box in boxes:
@@ -95,3 +105,51 @@ def hflip(img, labels):
     img = torch.flip(img, (2,))
     labels[:,1] = 1-labels[:,1]
     return img, labels
+
+def randomCrop(img, labels, output_size=(448,448)):
+    """
+    inputs:
+        img (tensor): [in_channels, x_dim, y_dim]
+        labels (tensor): [num_bboxes, (class_label, x_mid, y_mid,
+            width, height)])
+        output_size (tuple): (x_output_size,y_output_size)
+    returns:
+        cropped img, labels as tensors
+    """
+    cropped_corner = random.randrange(4)
+    x_output_size, y_output_size = output_size
+    x_crop_size = img.shape[1]-x_output_size
+    y_crop_size = img.shape[2]-y_output_size
+    x_crop_factor = (float(x_crop_size)/img.shape[1])
+    y_crop_factor = (float(y_crop_size)/img.shape[2])
+    if (x_crop_size < 1 or y_crop_size < 1):
+        return img, labels
+
+    if cropped_corner==0:
+        img = img[...,:-x_crop_size,:-y_crop_size]
+        labels[...,1] = labels[...,1]/(1-x_crop_factor)
+        labels[...,2] = labels[...,2]/(1-y_crop_factor)
+    elif cropped_corner==1:
+        img = img[...,:-x_crop_size,y_crop_size:]
+        labels[...,1] = (labels[...,1]-x_crop_factor)/(1-x_crop_factor)
+        labels[...,2] = labels[...,2]/(1-y_crop_factor)
+    elif cropped_corner==2:
+        img = img[...,x_crop_size:,:-y_crop_size]
+        labels[...,1] = labels[...,1]/(1-x_crop_factor)
+        labels[...,2] = (labels[...,2]-y_crop_factor)/(1-y_crop_factor)
+    else:
+        img = img[...,x_crop_size:,y_crop_size:]
+        labels[...,1] = (labels[...,1]-x_crop_factor)/(1-x_crop_factor)
+        labels[...,2] = (labels[...,2]-y_crop_factor)/(1-y_crop_factor)
+
+    labels[...,3] = labels[...,3]/(1-x_crop_factor)
+    labels[...,4] = labels[...,4]/(1-y_crop_factor)
+
+    labels = [label for label in labels.tolist()
+                if 1.0 > label[1] > 0.0
+                and 1.0 > label[2] > 0.0
+    ]
+    
+    labels = torch.tensor(labels)
+    return img, labels
+

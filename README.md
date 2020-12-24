@@ -26,6 +26,22 @@ The output predictions are processed with a probability threshold and non-max su
 
 ### Change Log
 
+#### I found a GPU / Better living with data augmentation (12/24/2020)
+
+A MacBook's CPU can only deliver so much when it comes to deep learning, so I turned to Google Colab to allow me to train this thing for real. I found that even on a training set of ~16k images my YOLOv1 and v2_lite models overfit the training data and performed extremely poorly on the held-out validation set. Fortunately, through the wonders of data augmentation I was able to train a YOLOv1 model that performed well on the validation set, and on images outside of Pascal VOC entirely.
+
+##### Data Augmentation Techniques
+
+Horizontal Flip: With tunable probability p images are flipped horizontally, effectively doubling the amount of training images we have. I had to implement this as a function of my custom dataset class in PyTorch so the ground truth bounding box could be correctly transformed along with the image.
+
+Random Crop: Given a crop factor cf and an input image of size (x,y), the image is resized to a random value between (x,y) and (x*(1+cf), y*(1+cf)), then cropped to size (x_out,y_out) by shaving off a random corner. This helps tremendously with overfitting, as the ground truth bounding boxes for a given image will have different values almost every time the model sees the image. This prevents the model from solving the training set by recognizing some unique feature of the image and mapping to the unchanging ground truth bounding box coordinates. Random cropping is the big change that took this model from simple overfitting to one that learns general features and can take on images not seen in the training set. Like horizontal flip, this had to be implemented as a function of the custom dataset class.
+
+Color Jitter and Gaussian Blur: Color jitter and gaussian blur on test images help the model become more robust and deal with images outside of the PASCAL VOC dataset. Gaussian blur specifically provided an noicable increase in performance on videos I took on my iPhone. Since these transformations leave the ground truth bounding boxes unchanged I was able to implement them with PyTorch's built-in transformations.
+
+##### Results (200 epochs on a random 80% of Pascal VOC)
+
+
+
 #### YOLOv2_lite (12/11/2020)
 
 YOLOv2_lite is a new model located in model.py which incorporates the darknet-19 architecture used in YOLOv2. The primary purpose of YOLOv2_lite is to

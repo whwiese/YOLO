@@ -58,6 +58,18 @@ src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/bad/B
 
 For more validation set predictions check out the predictions/v1_hrc_200e folder in this repository. There are some pretty interesting results in there.
 
+##### Images Outside of Pascal VOC
+
+I tested two models (YOLOV1 trained for 150 epochs and 200 epochs respectively on a random 80% of PASCAL VOC) on a set of 8 images containing bikes and bikers and saw detection quality comparable to what the model achieved on the Pascal VOC validation set.
+
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Bikes_150/BP.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Bikes_200/ThreeOfFour.png" alt="gen" width="400"/>
+
+...and a possble invisible horse
+
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Bikes_150/Horse.png" alt="gen" width="400"/>
+
+Check out all the predictions in the predictions/Bikes_200 and predictions/Bikes_150 folders.
 
 #### YOLOv2_lite (12/11/2020)
 
@@ -75,8 +87,8 @@ memory reduction solution.
 
 ##### Some results of overfitting 100 images for 100 epochs (0.768 mAP [0.05:0.95:0.05])
 
-<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/Dog.png" alt="gen" width="400"/> <img 
-src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/Car.png" alt="gen" width="400"/>
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/2l_100e/Airplane3.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/2l_100e/TableChairSofa.png" alt="gen" width="400"/>
 
 ---
 
@@ -116,6 +128,8 @@ src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Sheep.png" alt="g
 src="https://github.com/whwiese/YOLOv1/blob/master/predictions/AirplanePerson2.png" alt="gen" width="400"/>
 
 ...something's being learned, but not very fast! Email me if you want to employ me or buy me a GPU (whwiese@berkeley.edu)
+
+Update: I'll still take a GPU even though I learned how to use google colab.
 
 ---
 

@@ -24,7 +24,7 @@ The output predictions are processed with a probability threshold and non-max su
 
 ---
 
-### Change Log
+### Update Log
 
 #### I found a GPU / Better living with data augmentation (12/24/2020)
 
@@ -38,8 +38,25 @@ Random Crop: Given a crop factor cf and an input image of size (x,y), the image 
 
 Color Jitter and Gaussian Blur: Color jitter and gaussian blur on test images help the model become more robust and deal with images outside of the PASCAL VOC dataset. Gaussian blur specifically provided an noicable increase in performance on videos I took on my iPhone. Since these transformations leave the ground truth bounding boxes unchanged I was able to implement them with PyTorch's built-in transformations.
 
-##### Results (200 epochs on a random 80% of Pascal VOC)
+##### PASCAL VOC Validation Set Results (Trained for 200 epochs on a random 80% of Pascal VOC)
 
+The model is quite good at classification and bounding box prediction for images with a single prominent object.
+
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/good/Dog.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/good/Car.png" alt="gen" width="400"/>
+
+But things get a little dicey as images get busier.
+
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/Meh/IndoorCar.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/Meh/LittleBike.png" alt="gen" width="400"/>
+
+And there are occasional obvious classification failures. This is probably due to the limited dataset, as my data augmentation techniques are more helpful for bounding box predictions than for classification.
+
+
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/bad/NotCat.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/bad/BigBird.png" alt="gen" width="400"/>
+
+For more validation set predictions check out the predictions/v1_hrc_200e folder in this repository. There are some pretty interesting results in there.
 
 
 #### YOLOv2_lite (12/11/2020)
@@ -58,8 +75,8 @@ memory reduction solution.
 
 ##### Some results of overfitting 100 images for 100 epochs (0.768 mAP [0.05:0.95:0.05])
 
-<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/2l_100e/Airplane3.png" alt="gen" width="400"/> <img 
-src="https://github.com/whwiese/YOLOv1/blob/master/predictions/2l_100e/TableChairSofa.png" alt="gen" width="400"/>
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/Dog.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/Car.png" alt="gen" width="400"/>
 
 ---
 

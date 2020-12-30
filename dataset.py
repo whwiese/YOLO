@@ -9,7 +9,7 @@ import random
 Defines a Pascal VOC dataset for use in YOLOV1 object detector.
 
 __getitem__ returns:
-    image: PIL image object
+    image: torch tensor
     label_grid: (SxSxC+5 tensor) last dim has form 
         [one hot class_labels...,x_mid,y_mid,width,height,contains_object] 
         where coords are relative to the grid cell in which they are contained

@@ -24,7 +24,7 @@ The output predictions are processed with a probability threshold and non-max su
 
 ---
 
-### Change Log
+### Update Log
 
 #### I found a GPU / Better living with data augmentation (12/24/2020)
 
@@ -38,9 +38,38 @@ Random Crop: Given a crop factor cf and an input image of size (x,y), the image 
 
 Color Jitter and Gaussian Blur: Color jitter and gaussian blur on test images help the model become more robust and deal with images outside of the PASCAL VOC dataset. Gaussian blur specifically provided an noicable increase in performance on videos I took on my iPhone. Since these transformations leave the ground truth bounding boxes unchanged I was able to implement them with PyTorch's built-in transformations.
 
-##### Results (200 epochs on a random 80% of Pascal VOC)
+##### PASCAL VOC Validation Set Results (Trained for 200 epochs on a random 80% of Pascal VOC)
+
+The model is quite good at classification and bounding box prediction for images with a single prominent object.
+
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/good/Dog.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/good/Car.png" alt="gen" width="400"/>
+
+But things get a little dicey as images get busier.
+
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/Meh/IndoorCar.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/Meh/LittleBike.png" alt="gen" width="400"/>
+
+And there are occasional obvious classification failures. This is probably due to the limited dataset, as my data augmentation techniques are more helpful for bounding box predictions than for classification.
 
 
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/bad/NotCat.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/v1_hrc_200e/bad/BigBird.png" alt="gen" width="400"/>
+
+For more validation set predictions check out the predictions/v1_hrc_200e folder in this repository. There are some pretty interesting results in there.
+
+##### Images Outside of Pascal VOC
+
+I tested two models (YOLOV1 trained for 150 epochs and 200 epochs respectively on a random 80% of PASCAL VOC) on a set of 8 images containing bikes and bikers and saw detection quality comparable to what the model achieved on the Pascal VOC validation set.
+
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Bikes_150/BP.png" alt="gen" width="400"/> <img 
+src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Bikes_200/ThreeOfFour.png" alt="gen" width="400"/>
+
+...and a possble invisible horse
+
+<img src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Bikes_150/Horse.png" alt="gen" width="400"/>
+
+Check out all the predictions in the predictions/Bikes_200 and predictions/Bikes_150 folders.
 
 #### YOLOv2_lite (12/11/2020)
 
@@ -99,6 +128,8 @@ src="https://github.com/whwiese/YOLOv1/blob/master/predictions/Sheep.png" alt="g
 src="https://github.com/whwiese/YOLOv1/blob/master/predictions/AirplanePerson2.png" alt="gen" width="400"/>
 
 ...something's being learned, but not very fast! Email me if you want to employ me or buy me a GPU (whwiese@berkeley.edu)
+
+Update: I'll still take a GPU even though I learned how to use google colab.
 
 ---
 

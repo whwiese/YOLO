@@ -16,30 +16,27 @@ from loss import YoloLoss
 import time
 import pandas as pd
 
-seed = 123
-torch.manual_seed(seed)
-
 #YOLO hyperparameters
-GRID_SIZE = 13
+GRID_SIZE = 7
 NUM_BOXES = 2
 NUM_CLASSES = 20
 
 #other hyperparameters
 LEARNING_RATE = 2e-5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 10
+BATCH_SIZE = 24
 WEIGHT_DECAY = 0
 EPOCHS = 200
-NUM_WORKERS = 2
-PIN_MEMORY = False
-LOAD_MODEL = False
-DROP_LAST = False
-TRAINING_DATA = "data/all_voc.csv"
+NUM_WORKERS = 24
+PIN_MEMORY = True
+LOAD_CHECKPOINT = True
+DROP_LAST = True
+TRAINING_DATA = "all_voc.csv"
 TEST_DATA = None 
-SAVE_MODEL_PATH = "saved_models/datasplit_test"
-LOAD_MODEL_PATH = "saved_models/2l_overfit_100.pt"
-IMG_DIR = "data/images"
-LABEL_DIR = "data/labels"
+SAVE_CHECKPOINT_PATH = "VOCTrial_v1_hflip3/"
+LOAD_CHECKPOINT_PATH = "VOCTrial_v1_hflip3/checkpoint_180e.pt"
+IMG_DIR = "images"
+LABEL_DIR = "labels"
 
 DATA_SIZE = len(pd.read_csv(TRAINING_DATA))
 TRAIN_SIZE = int(0.8*DATA_SIZE)
@@ -55,7 +52,12 @@ class Compose(object):
 
         return img, labels
 
-transform = Compose([transforms.Resize((416,416)), transforms.ToTensor()])
+transform = Compose([transforms.Resize((448,448)), transforms.ToTensor()])
+
+train_transform = Compose([transforms.Resize((448,448)),
+                           transforms.ColorJitter(brightness=0.5, contrast = 0.5),
+                           transforms.ToTensor(),
+            ])
 
 def train_fn(loader_train, model, optimizer, loss_fn):
     
@@ -73,20 +75,29 @@ def train_fn(loader_train, model, optimizer, loss_fn):
     print("Mean loss: %f"%(sum(mean_loss)/len(mean_loss)))
 
 def main():
-    model = YOLOv2_lite(grid_size=GRID_SIZE, 
+    model = YOLOv1(grid_size=GRID_SIZE, 
             num_boxes=NUM_BOXES, num_classes=NUM_CLASSES).to(DEVICE)
     optimizer = optim.Adam(
             model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
     )
     loss_fn = YoloLoss(S=GRID_SIZE, B=NUM_BOXES, C=NUM_CLASSES)
 
-    if LOAD_MODEL:
-        model.load_state_dict(torch.load(LOAD_MODEL_PATH))
+    epochs_passed = 0
+
+    if LOAD_CHECKPOINT:
+        checkpoint = torch.load(LOAD_CHECKPOINT_PATH)
+        model.load_state_dict(checkpoint['model'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        for param_group in optimizer.param_groups:
+          param_group['lr'] = 2e-6
+        epochs_passed = checkpoint['epoch']
 
     mask_dataset = YOLOVOCDataset(
-            TRAINING_DATA, transform=transform, 
+            TRAINING_DATA, transform=train_transform, 
             img_dir=IMG_DIR, label_dir=LABEL_DIR,
             S=GRID_SIZE, B=NUM_BOXES, C=NUM_CLASSES,
+            hflip_prob = 0.5,
+            random_crops=0.25,
     )
 
     train_dataset, val_dataset = random_split (
@@ -110,7 +121,7 @@ def main():
                 num_workers=NUM_WORKERS,
                 pin_memory=PIN_MEMORY,
                 shuffle=True,
-                drop_last=DROP_LAST,
+                drop_last=False,
         )
 
     else:
@@ -129,24 +140,18 @@ def main():
                 #num_workers=NUM_WORKERS,
                 #pin_memory=PIN_MEMORY,
                 shuffle=True,
-                drop_last=DROP_LAST,
+                drop_last=False,
         )
 
-
-    epochs_passed = 0
-    val_mAPs = []
-    train_mAPs = []
-    epochs_recorded = []
-
     for epoch in range(EPOCHS):
-        if epochs_passed%5 == 0:
+        if epochs_passed%2 == 0:
             train_pred_boxes, train_target_boxes = get_bboxes(
-                    train_loader, model, iou_threshold=0.5, prob_threshold=0.4,
+                    train_loader, model, iou_threshold=0.35, prob_threshold=0.4,
                     S=GRID_SIZE, C=NUM_CLASSES, mode = "batch",
                     device=DEVICE,
             )
             val_pred_boxes, val_target_boxes = get_bboxes(
-                    val_loader, model, iou_threshold=0.5, prob_threshold=0.4,
+                    val_loader, model, iou_threshold=0.35, prob_threshold=0.4,
                     S=GRID_SIZE, C=NUM_CLASSES, mode = "batch",
                     device=DEVICE,
             )
@@ -154,15 +159,15 @@ def main():
             # map function takes predicted boxes and ground truth
             # boxes in form [[],[],[],...] where each sublist is a bounding box
             # of form [image_index, class_pred, x_mid, y_mid, w, h, prob]
-            train_mAP = mean_average_precision(
-                    val_pred_boxes, val_target_boxes, 
+            train_mAP = single_map(
+                    train_pred_boxes, train_target_boxes, 
                     box_format="midpoint", num_classes=NUM_CLASSES,
-                    start_threshold=0.4,
+                    iou_threshold=0.35,
             )
-            val_mAP = mean_average_precision(
+            val_mAP = single_map(
                     val_pred_boxes, val_target_boxes, 
                     box_format="midpoint", num_classes=NUM_CLASSES,
-                    start_threshold=0.4,
+                    iou_threshold=0.35,
             )
 
             train_mAPs.append(train_mAP)
@@ -173,12 +178,21 @@ def main():
             print("Val mAP: %f"%(val_mAP))
 
         if epochs_passed%10 == 0:
-            save_path = SAVE_MODEL_PATH + ("_%de"%(epochs_passed))+".pt"
-            torch.save(model.state_dict(),save_path)
+            save_path = SAVE_CHECKPOINT_PATH + ("checkpoint_%de"%(epochs_passed))+".pt"
+            checkpoint = { 
+                'epoch': epochs_passed,
+                'model': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+            }
+            torch.save(checkpoint,save_path)
             print("Trained for %d epochs"%(epochs_passed))
 
         train_fn(train_loader, model, optimizer, loss_fn)
         epochs_passed += 1
+
+train_mAPs = []
+val_mAPs = []
+epochs_recorded = []
 
 if __name__ == "__main__":
     start_time = time.time()
